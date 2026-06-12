@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoodChain Pro</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root{
+    --bg:#0f172a;
+    --panel:#1f2937;
+    --panel2:#172033;
+    --accent:#2563eb;
+    --accent2:#22c55e;
+    --warn:#f59e0b;
+    --danger:#ef4444;
+    --text:#e5e7eb;
+    --muted:#94a3b8;
+    --border:#334155;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI',Arial,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+  }
+  .app{display:flex;min-height:100vh;}
+  .sidebar{
+    width:230px;
+    background:#111827;
+    padding:20px 14px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    border-right:1px solid var(--border);
+    position:sticky;top:0;height:100vh;
+  }
+  .sidebar h2{
+    font-size:1.3rem;
+    margin:0 0 18px 4px;
+    color:var(--accent2);
+  }
+  .sidebar button{
+    text-align:left;
+    background:transparent;
+    color:var(--text);
+    border:none;
+    padding:12px 14px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:0.95rem;
+    transition:.15s;
+  }
+  .sidebar button:hover{background:#1e293b;}
+  .sidebar button.active{
+    background:var(--accent);
+    color:#fff;
+    font-weight:600;
+  }
+  .main{flex:1;padding:28px 32px;max-width:100%;overflow-x:hidden;}
+  .page.hidden{display:none;}
+  h1{margin-top:0;}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:24px;}
+  .card{
+    background:var(--panel);
+    padding:16px 18px;
+    border-radius:12px;
+    border:1px solid var(--border);
+  }
+  .card h3{margin:0 0 6px;font-size:0.85rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;}
+  .card .big{font-size:1.8rem;font-weight:700;}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:20px;}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;align-items:center;}
+  input,select{
+    background:#0b1220;
+    color:var(--text);
+    border:1px solid var(--border);
+    padding:9px 12px;
+    border-radius:8px;
+    font-size:0.9rem;
+  }
+  input[type="range"]{padding:0;}
+  button.btn{
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    padding:9px 16px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:0.9rem;
+    font-weight:600;
+    transition:.15s;
+  }
+  button.btn:hover{filter:brightness(1.1);}
+  button.btn.secondary{background:#334155;}
+  button.btn.green{background:var(--accent2);color:#06281a;}
+  button.btn.warn{background:var(--warn);color:#3a2300;}
+  button.btn.danger{background:var(--danger);}
+  button.btn:disabled{opacity:.4;cursor:not-allowed;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;}
+  .product-card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:16px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .product-card h3{margin:0;}
+  .badge{
+    display:inline-block;
+    padding:3px 10px;
+    border-radius:999px;
+    font-size:0.72rem;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+  }
+  .badge.cat{background:#1e3a8a;color:#bfdbfe;}
+  .badge.fresh-excellent{background:#064e3b;color:#6ee7b7;}
+  .badge.fresh-good{background:#365314;color:#bef264;}
+  .badge.fresh-fair{background:#78350f;color:#fcd34d;}
+  .badge.fresh-poor,.badge.fresh-spoiled{background:#7f1d1d;color:#fecaca;}
+  .badge.stage{background:#312e81;color:#c7d2fe;}
+  .badge.recalled{background:var(--danger);color:#fff;}
+  .quality-bar{
+    height:8px;border-radius:999px;background:#0b1220;overflow:hidden;border:1px solid var(--border);
+  }
+  .quality-bar > div{height:100%;border-radius:999px;}
+  .row{display:flex;gap:8px;flex-wrap:wrap;}
+  .timeline{list-style:none;padding:0;margin:14px 0 0;border-left:2px solid var(--border);}
+  .timeline li{
+    position:relative;padding:8px 0 8px 22px;
+  }
+  .timeline li::before{
+    content:"";position:absolute;left:-7px;top:14px;width:12px;height:12px;border-radius:50%;
+    background:var(--accent2);border:2px solid var(--bg);
+  }
+  .timeline .meta{color:var(--muted);font-size:0.8rem;}
+  .block{
+    background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;
+    font-family:ui-monospace,Consolas,monospace;font-size:0.82rem;word-break:break-all;
+  }
+  .block .hdr{display:flex;justify-content:space-between;font-weight:700;color:var(--accent2);margin-bottom:6px;font-family:inherit;}
+  .block .hash{color:#fbbf24;}
+  .block .prev{color:#60a5fa;}
+  .pill-row{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0;}
+  .pill{background:#0b1220;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:0.85rem;}
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:50;
+  }
+  .modal-overlay.hidden{display:none;}
+  .modal{
+    background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:24px;text-align:center;max-width:320px;
+  }
+  .modal h3{margin-top:0;}
+  .modal .qrbox{background:#fff;padding:12px;border-radius:8px;display:inline-block;margin:10px 0;}
+  .chart-bars{display:flex;flex-direction:column;gap:10px;}
+  .chart-row{display:flex;align-items:center;gap:10px;font-size:0.85rem;}
+  .chart-row .label{width:110px;color:var(--muted);}
+  .chart-row .track{flex:1;background:#0b1220;border:1px solid var(--border);border-radius:999px;height:12px;overflow:hidden;}
+  .chart-row .fill{height:100%;border-radius:999px;}
+  .chart-row .val{width:36px;text-align:right;color:var(--muted);}
+  .toast{
+    position:fixed;bottom:24px;right:24px;background:var(--accent2);color:#06281a;
+    padding:12px 18px;border-radius:10px;font-weight:600;box-shadow:0 4px 14px rgba(0,0,0,.4);
+    z-index:60;opacity:0;transform:translateY(20px);transition:.25s;
+  }
+  .toast.show{opacity:1;transform:translateY(0);}
+  .empty{color:var(--muted);padding:20px 0;text-align:center;}
+  .footer-note{color:var(--muted);font-size:0.8rem;margin-top:30px;}
+  .right{margin-left:auto;}
+  @media(max-width:780px){
+    .sidebar{width:70px;}
+    .sidebar h2{display:none;}
+    .sidebar button{font-size:0.7rem;text-align:center;padding:10px 4px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <aside class="sidebar">
+    <h2>🌿 FoodChain Pro</h2>
+    <button data-page="dashboard" class="active" onclick="showPage('dashboard')">📊 Dashboard</button>
+    <button data-page="products" onclick="showPage('products')">📦 Products</button>
+    <button data-page="add" onclick="showPage('add')">➕ Add Product</button>
+    <button data-page="passport" onclick="showPage('passport')">🪪 Product Passport</button>
+    <button data-page="blockchain" onclick="showPage('blockchain')">⛓ Blockchain</button>
+    <button data-page="recalls" onclick="showPage('recalls')">🚨 Recalls</button>
+  </aside>
+
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <section id="dashboard" class="page">
+      <h1>Dashboard Analytics</h1>
+
+      <div class="cards">
+        <div class="card">
+          <h3>Total Products</h3>
+          <p class="big" id="statTotal">0</p>
+        </div>
+        <div class="card">
+          <h3>Verified (Quality ≥ 90)</h3>
+          <p class="big" id="statVerified">0</p>
+        </div>
+        <div class="card">
+          <h3>Average Quality</h3>
+          <p class="big" id="statAvgQuality">0%</p>
+        </div>
+        <div class="card">
+          <h3>Active Shipments</h3>
+          <p class="big" id="statActive">0</p>
+        </div>
+        <div class="card">
+          <h3>Recalled Items</h3>
+          <p class="big" id="statRecalled">0</p>
+        </div>
+        <div class="card">
+          <h3>Blockchain Length</h3>
+          <p class="big" id="statChain">0</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3 style="margin-top:0;">Freshness Distribution</h3>
+        <div class="chart-bars" id="freshnessChart"></div>
+      </div>
+
+      <div class="panel">
+        <h3 style="margin-top:0;">Category Breakdown</h3>
+        <div class="chart-bars" id="categoryChart"></div>
+      </div>
+
+      <div class="panel">
+        <h3 style="margin-top:0;">Recent Blockchain Activity</h3>
+        <ul class="timeline" id="recentActivity"></ul>
+      </div>
+    </section>
+
+    <!-- PRODUCTS -->
+    <section id="products" class="page hidden">
+      <h1>Products</h1>
+
+      <div class="toolbar">
+        <input type="text" id="searchInput" placeholder="🔍 Search by name or ID..." oninput="renderProducts()">
+        <select id="categoryFilter" onchange="renderProducts()">
+          <option value="">All Categories</option>
+        </select>
+        <select id="stageFilter" onchange="renderProducts()">
+          <option value="">All Stages</option>
+        </select>
+        <select id="sortBy" onchange="renderProducts()">
+          <option value="id">Sort: ID</option>
+          <option value="name">Sort: Name</option>
+          <option value="quality-desc">Sort: Quality (High→Low)</option>
+          <option value="quality-asc">Sort: Quality (Low→High)</option>
+        </select>
+        <button class="btn secondary right" onclick="resetData()">↺ Reset Demo Data</button>
+      </div>
+
+      <div id="productsData" class="grid"></div>
+    </section>
+
+    <!-- ADD PRODUCT -->
+    <section id="add" class="page hidden">
+      <h1>Add New Product</h1>
+      <div class="panel" style="max-width:480px;">
+        <div class="row" style="flex-direction:column;gap:14px;">
+          <label>Product Name
+            <input type="text" id="newName" placeholder="e.g. Avocados" style="width:100%;margin-top:4px;">
+          </label>
+          <label>Category
+            <select id="newCategory" style="width:100%;margin-top:4px;">
+              <option>Vegetables</option>
+              <option>Fruits</option>
+              <option>Dairy</option>
+              <option>Grains</option>
+              <option>Poultry</option>
+              <option>Seafood</option>
+              <option>Other</option>
+            </select>
+          </label>
+          <label>Origin / Farm
+            <input type="text" id="newOrigin" placeholder="e.g. Green Valley Farm" style="width:100%;margin-top:4px;">
+          </label>
+          <button class="btn green" onclick="addProduct()">＋ Add Product to Chain</button>
+          <div id="addMsg" style="color:var(--accent2);font-weight:600;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PASSPORT -->
+    <section id="passport" class="page hidden">
+      <h1>Product Passport</h1>
+
+      <div class="toolbar">
+        <input list="productIds" type="text" id="productIdInput" placeholder="Enter or pick a Product ID (e.g. P1)"
+          oninput="if(state.products.some(p=>p.id.toLowerCase()===this.value.trim().toLowerCase())) loadPassport();">
+        <datalist id="productIds"></datalist>
+        <button class="btn" onclick="loadPassport()">🔍 Search</button>
+      </div>
+
+      <div id="passportData"></div>
+    </section>
+
+    <!-- BLOCKCHAIN -->
+    <section id="blockchain" class="page hidden">
+      <h1>Blockchain Explorer</h1>
+
+      <div class="toolbar">
+        <button class="btn" onclick="renderBlockchain()">↻ Refresh</button>
+        <button class="btn secondary" onclick="verifyChain()">✅ Verify Chain Integrity</button>
+        <span id="chainStatus" class="pill"></span>
+      </div>
+
+      <div id="blockchainData"></div>
+    </section>
+
+    <!-- RECALLS -->
+    <section id="recalls" class="page hidden">
+      <h1>Product Recalls</h1>
+      <div id="recallsData"></div>
+    </section>
+
+  </main>
+</div>
+
+<!-- QR MODAL -->
+<div class="modal-overlay hidden" id="qrModal" onclick="if(event.target===this)closeQR()">
+  <div class="modal">
+    <h3 id="qrTitle">Product QR</h3>
+    <div class="qrbox" id="qrcode"></div>
+    <p style="color:var(--muted);font-size:0.85rem;">Scan to view product passport ID</p>
+    <button class="btn secondary" onclick="closeQR()">Close</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   FOODCHAIN PRO — single-file demo app
+   In-browser product catalog + simulated blockchain ledger
+   ========================================================= */
+
+const STAGES = ["HARVEST","QUALITY_CHECK","PICKUP","IN_TRANSIT","HUB_ARRIVAL","OUT_FOR_DELIVERY","DELIVERED","SOLD"];
+const STORAGE_KEY = "foodchain_pro_state_v1";
+
+let state = { products: [], chain: [] };
+
+/* ---------- default seed data ---------- */
+function defaultProducts(){
+  const raw = [
+    ["P1","Tomatoes","Vegetables",96,"Farm A"],
+    ["P2","Rice","Grains",80,"Farm B"],
+    ["P3","Milk","Dairy",92,"Dairy Farm"],
+    ["P4","Potatoes","Vegetables",95,"Farm C"],
+    ["P5","Onions","Vegetables",93,"Farm D"],
+    ["P6","Carrots","Vegetables",94,"Farm E"],
+    ["P7","Cabbage","Vegetables",90,"Farm F"],
+    ["P8","Spinach","Vegetables",96,"Farm G"],
+    ["P9","Apples","Fruits",96,"Orchard A"],
+    ["P10","Bananas","Fruits",82,"Plantation A"],
+    ["P11","Mangoes","Fruits",96,"Farm H"],
+    ["P12","Grapes","Fruits",94,"Vineyard A"],
+    ["P13","Strawberries","Fruits",96,"Farm I"],
+    ["P14","Wheat","Grains",78,"Farm J"],
+    ["P15","Corn","Grains",92,"Farm K"],
+    ["P16","Beans","Grains",75,"Farm L"],
+    ["P17","Peas","Vegetables",93,"Farm M"],
+    ["P18","Cheese","Dairy",95,"Dairy Farm B"],
+    ["P19","Butter","Dairy",94,"Dairy Farm C"],
+    ["P20","Yogurt","Dairy",96,"Dairy Farm D"],
+    ["P21","Eggs","Poultry",96,"Poultry Farm A"],
+    ["P22","Chicken","Poultry",93,"Poultry Farm B"],
+    ["P23","Fish","Seafood",85,"Sea Farm A"],
+    ["P24","Orange","Fruits",95,"Orchard B"],
+    ["P25","Pineapple","Fruits",96,"Farm N"]
+  ];
+  return raw.map((r,i)=>({
+    id:r[0], name:r[1], category:r[2], quality:r[3],
+    freshness:freshnessFromQuality(r[3]), origin:r[4],
+    stage: STAGES[i % STAGES.length],
+    recalled:false, recallReason:null
+  }));
+}
+
+function freshnessFromQuality(q){
+  q = Number(q);
+  if(q>=85) return "Excellent";
+  if(q>=70) return "Good";
+  if(q>=50) return "Fair";
+  if(q>=30) return "Poor";
+  return "Spoiled";
+}
+
+/* ---------- simple deterministic "hash" for demo blockchain ---------- */
+function simpleHash(str){
+  let h1=0xdeadbeef^str.length, h2=0x41c6ce57^str.length;
+  for(let i=0;i<str.length;i++){
+    const ch=str.charCodeAt(i);
+    h1=Math.imul(h1^ch,2654435761); h1=h1^(h1>>>13);
+    h2=Math.imul(h2^ch,1597334677); h2=h2^(h2>>>16);
+  }
+  h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);
+  h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);
+  const hex1=(h1>>>0).toString(16).padStart(8,"0");
+  const hex2=(h2>>>0).toString(16).padStart(8,"0");
+  // pad to a 64-char "sha256-like" string by repeating
+  return (hex1+hex2+hex1+hex2+hex1+hex2+hex1+hex2).slice(0,64);
+}
+
+function makeBlock(prevHash, data, timeOffsetMs){
+  const index = state.chain.length;
+  const time = new Date(Date.now() + (timeOffsetMs||0)).toISOString();
+  const payload = JSON.stringify({index, prevHash, time, data});
+  const hash = simpleHash(payload);
+  return {index, prevHash, hash, time, data};
+}
+
+function addBlock(data){
+  const prev = state.chain.length ? state.chain[state.chain.length-1].hash : "0".repeat(64);
+  const block = makeBlock(prev, data);
+  state.chain.push(block);
+  save();
+  return block;
+}
+
+/* ---------- seed initial chain from product stages ---------- */
+function seedChain(products){
+  state.chain = [];
+  // genesis
+  addBlock({type:"GENESIS", note:"FoodChain Pro ledger initialized"});
+  products.forEach(p=>{
+    const idx = STAGES.indexOf(p.stage);
+    for(let s=0;s<=idx;s++){
+      addBlock({
+        productId:p.id,
+        action:STAGES[s],
+        actor: s===0 ? "FARMER" : (s<3?"FARMER":(s<6?"DISTRIBUTOR":"RETAILER")),
+        location:p.origin
+      });
+    }
+  });
+}
+
+/* ---------- persistence ---------- */
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+function load(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if(raw){
+    try{
+      state = JSON.parse(raw);
+      if(state.products && state.chain) return true;
+    }catch(e){}
+  }
+  return false;
+}
+function resetData(){
+  if(!confirm("Reset all demo data back to the original 25 products and ledger? This cannot be undone.")) return;
+  state.products = defaultProducts();
+  seedChain(state.products);
+  save();
+  renderAll();
+  toast("Demo data reset ✅");
+}
+
+/* ---------- navigation ---------- */
+function showPage(pageId){
+  document.querySelectorAll(".page").forEach(p=>p.classList.add("hidden"));
+  document.getElementById(pageId).classList.remove("hidden");
+  document.querySelectorAll(".sidebar button").forEach(b=>b.classList.remove("active"));
+  const btn = document.querySelector(`.sidebar button[data-page="${pageId}"]`);
+  if(btn) btn.classList.add("active");
+
+  if(pageId==="dashboard") renderDashboard();
+  if(pageId==="products") renderProducts();
+  if(pageId==="passport") populatePassportList();
+  if(pageId==="blockchain") renderBlockchain();
+  if(pageId==="recalls") renderRecalls();
+}
+
+/* ---------- toast ---------- */
+let toastTimer;
+function toast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove("show"),2200);
+}
+
+/* ===================== DASHBOARD ===================== */
+function renderDashboard(){
+  const products = state.products;
+  const total = products.length;
+  const verified = products.filter(p=>p.quality>=90).length;
+  const avg = total ? Math.round(products.reduce((a,p)=>a+p.quality,0)/total) : 0;
+  const active = products.filter(p=>["PICKUP","IN_TRANSIT","HUB_ARRIVAL","OUT_FOR_DELIVERY"].includes(p.stage) && !p.recalled).length;
+  const recalled = products.filter(p=>p.recalled).length;
+
+  document.getElementById("statTotal").textContent = total;
+  document.getElementById("statVerified").textContent = verified;
+  document.getElementById("statAvgQuality").textContent = avg + "%";
+  document.getElementById("statActive").textContent = active;
+  document.getElementById("statRecalled").textContent = recalled;
+  document.getElementById("statChain").textContent = state.chain.length;
+
+  // freshness chart
+  const freshLevels = ["Excellent","Good","Fair","Poor","Spoiled"];
+  const freshColors = {Excellent:"#22c55e",Good:"#a3e635",Fair:"#fbbf24",Poor:"#f87171",Spoiled:"#7f1d1d"};
+  const fHtml = freshLevels.map(level=>{
+    const count = products.filter(p=>p.freshness===level).length;
+    const pct = total ? Math.round(count/total*100) : 0;
+    return `<div class="chart-row">
+      <div class="label">${level}</div>
+      <div class="track"><div class="fill" style="width:${pct}%;background:${freshColors[level]}"></div></div>
+      <div class="val">${count}</div>
+    </div>`;
+  }).join("");
+  document.getElementById("freshnessChart").innerHTML = fHtml;
+
+  // category chart
+  const cats = [...new Set(products.map(p=>p.category))];
+  const catColors = ["#60a5fa","#34d399","#fbbf24","#f472b6","#a78bfa","#fb923c","#94a3b8"];
+  const cHtml = cats.map((cat,i)=>{
+    const count = products.filter(p=>p.category===cat).length;
+    const pct = total ? Math.round(count/total*100) : 0;
+    return `<div class="chart-row">
+      <div class="label">${cat}</div>
+      <div class="track"><div class="fill" style="width:${pct}%;background:${catColors[i%catColors.length]}"></div></div>
+      <div class="val">${count}</div>
+    </div>`;
+  }).join("");
+  document.getElementById("categoryChart").innerHTML = cHtml || `<div class="empty">No products</div>`;
+
+  // recent activity
+  const recent = state.chain.slice(-6).reverse();
+  document.getElementById("recentActivity").innerHTML = recent.map(b=>{
+    const d = b.data;
+    const label = d.type==="GENESIS" ? "⛓ Genesis block created"
+      : `📦 <strong>${d.productId}</strong> → ${d.action.replace(/_/g," ")} (${d.actor||"SYSTEM"})`;
+    return `<li>${label}<div class="meta">${new Date(b.time).toLocaleString()} · Block #${b.index}</div></li>`;
+  }).join("") || `<div class="empty">No activity yet</div>`;
+}
+
+/* ===================== PRODUCTS ===================== */
+function populateFilters(){
+  const catSel = document.getElementById("categoryFilter");
+  const stageSel = document.getElementById("stageFilter");
+  const cats = [...new Set(state.products.map(p=>p.category))].sort();
+  catSel.innerHTML = `<option value="">All Categories</option>` +
+    cats.map(c=>`<option value="${c}">${c}</option>`).join("");
+  stageSel.innerHTML = `<option value="">All Stages</option>` +
+    STAGES.map(s=>`<option value="${s}">${s.replace(/_/g," ")}</option>`).join("") +
+    `<option value="RECALLED">RECALLED</option>`;
+}
+
+function renderProducts(){
+  const search = (document.getElementById("searchInput").value||"").toLowerCase();
+  const catFilter = document.getElementById("categoryFilter").value;
+  const stageFilter = document.getElementById("stageFilter").value;
+  const sortBy = document.getElementById("sortBy").value;
+
+  let list = state.products.filter(p=>{
+    const matchesSearch = !search || p.name.toLowerCase().includes(search) || p.id.toLowerCase().includes(search);
+    const matchesCat = !catFilter || p.category===catFilter;
+    const matchesStage = !stageFilter || (stageFilter==="RECALLED" ? p.recalled : (p.stage===stageFilter && !p.recalled));
+    return matchesSearch && matchesCat && matchesStage;
+  });
+
+  if(sortBy==="name") list.sort((a,b)=>a.name.localeCompare(b.name));
+  else if(sortBy==="quality-desc") list.sort((a,b)=>b.quality-a.quality);
+  else if(sortBy==="quality-asc") list.sort((a,b)=>a.quality-b.quality);
+  else list.sort((a,b)=> parseInt(a.id.slice(1)) - parseInt(b.id.slice(1)));
+
+  const container = document.getElementById("productsData");
+  if(!list.length){
+    container.innerHTML = `<div class="empty">No products match your filters.</div>`;
+    return;
+  }
+
+  container.innerHTML = list.map(p=>{
+    const qColor = p.quality>=90?"#22c55e":p.quality>=75?"#a3e635":p.quality>=50?"#fbbf24":"#f87171";
+    const freshClass = "fresh-"+p.freshness.toLowerCase();
+    const stageIdx = STAGES.indexOf(p.stage);
+    const nextStage = STAGES[stageIdx+1];
+    const canAdvance = !p.recalled && stageIdx < STAGES.length-1;
+    return `
+      <div class="product-card">
+        <div class="row" style="justify-content:space-between;align-items:flex-start;">
+          <h3>${p.name}</h3>
+          <span class="badge cat">${p.category}</span>
+        </div>
+        <div class="row" style="color:var(--muted);font-size:0.85rem;">ID: ${p.id} · Origin: ${p.origin}</div>
+        <div class="row">
+          <span class="badge ${freshClass}">${p.freshness}</span>
+          ${p.recalled ? `<span class="badge recalled">RECALLED</span>` : `<span class="badge stage">${p.stage.replace(/_/g," ")}</span>`}
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:0.8rem;color:var(--muted);margin-bottom:4px;">
+            <span>Quality Score</span><span>${p.quality}%</span>
+          </div>
+          <div class="quality-bar"><div style="width:${p.quality}%;background:${qColor}"></div></div>
+        </div>
+        <div class="row" style="margin-top:6px;">
+          <button class="btn secondary" onclick="generateQR('${p.id}')">🔳 QR Code</button>
+          <button class="btn secondary" onclick="viewPassport('${p.id}')">🪪 Passport</button>
+        </div>
+        <div class="row">
+          ${canAdvance ? `<button class="btn green" onclick="advanceStage('${p.id}')">➡ Advance to ${nextStage.replace(/_/g," ")}</button>` : ""}
+          ${!canAdvance && !p.recalled ? `<span class="pill">✔ Fully delivered chain</span>` : ""}
+          ${!p.recalled ? `<button class="btn danger" onclick="recallProduct('${p.id}')">🚨 Recall</button>` : `<span class="pill">Reason: ${p.recallReason}</span>`}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function advanceStage(id){
+  const p = state.products.find(p=>p.id===id);
+  if(!p) return;
+  const idx = STAGES.indexOf(p.stage);
+  if(idx >= STAGES.length-1) return;
+  p.stage = STAGES[idx+1];
+  const actor = idx+1 < 3 ? "FARMER" : (idx+1 < 6 ? "DISTRIBUTOR" : "RETAILER");
+  addBlock({productId:p.id, action:p.stage, actor, location:p.origin});
+  save();
+  renderProducts();
+  renderDashboard();
+  toast(`${p.id} advanced to ${p.stage.replace(/_/g," ")} ✅`);
+}
+
+function recallProduct(id){
+  const p = state.products.find(p=>p.id===id);
+  if(!p) return;
+  const reason = prompt(`Reason for recalling ${p.name} (${p.id})?`, "Quality threshold failure");
+  if(reason===null) return;
+  p.recalled = true;
+  p.recallReason = reason || "Unspecified";
+  p.freshness = "Spoiled";
+  addBlock({productId:p.id, action:"RECALLED", actor:"SYSTEM", reason:p.recallReason});
+  save();
+  renderProducts();
+  renderDashboard();
+  renderRecalls();
+  toast(`${p.id} flagged as RECALLED 🚨`);
+}
+
+/* ===================== ADD PRODUCT ===================== */
+function nextProductId(){
+  let max = 0;
+  state.products.forEach(p=>{
+    const n = parseInt(p.id.replace(/[^0-9]/g,""))||0;
+    if(n>max) max = n;
+  });
+  return "P"+(max+1);
+}
+
+function addProduct(){
+  const name = document.getElementById("newName").value.trim();
+  const category = document.getElementById("newCategory").value;
+  const origin = document.getElementById("newOrigin").value.trim() || "Unknown Origin";
+  const quality = Math.floor(Math.random() * (96 - 75 + 1)) + 75;
+
+  if(!name){
+    document.getElementById("addMsg").style.color = "var(--danger)";
+    document.getElementById("addMsg").textContent = "⚠ Please enter a product name.";
+    return;
+  }
+
+  const product = {
+    id: nextProductId(),
+    name, category, origin, quality,
+    freshness: freshnessFromQuality(quality),
+    stage: "HARVEST",
+    recalled:false, recallReason:null
+  };
+  state.products.push(product);
+  addBlock({productId:product.id, action:"HARVEST", actor:"FARMER", location:origin, note:`${name} registered on FoodChain`});
+  save();
+
+  document.getElementById("addMsg").style.color = "var(--accent2)";
+  document.getElementById("addMsg").textContent = `✅ ${name} added as ${product.id} with quality ${quality}% (${product.freshness}) and recorded on the blockchain!`;
+  document.getElementById("newName").value="";
+  document.getElementById("newOrigin").value="";
+
+  populateFilters();
+  renderProducts();
+  renderDashboard();
+  populatePassportList();
+  toast(`${product.id} added to FoodChain ✅`);
+}
+
+/* ===================== PASSPORT ===================== */
+function populatePassportList(){
+  const dl = document.getElementById("productIds");
+  dl.innerHTML = state.products.map(p=>`<option value="${p.id}">${p.name}</option>`).join("");
+}
+
+function viewPassport(id){
+  showPage("passport");
+  document.getElementById("productIdInput").value = id;
+  loadPassport();
+}
+
+function loadPassport(){
+  const id = document.getElementById("productIdInput").value.trim();
+  const container = document.getElementById("passportData");
+  const p = state.products.find(p=>p.id.toLowerCase()===id.toLowerCase());
+
+  if(!p){
+    const validIds = state.products.map(p=>p.id).join(", ");
+    container.innerHTML = `<div class="empty">No product found with ID "${id}".<br><br>Valid IDs: ${validIds}</div>`;
+    return;
+  }
+
+  const history = state.chain.filter(b=>b.data.productId===p.id);
+  const qColor = p.quality>=90?"#22c55e":p.quality>=75?"#a3e635":p.quality>=50?"#fbbf24":"#f87171";
+  const freshClass = "fresh-"+p.freshness.toLowerCase();
+
+  container.innerHTML = `
+    <div class="panel">
+      <div class="row" style="justify-content:space-between;align-items:flex-start;">
+        <div>
+          <h2 style="margin:0;">${p.name} <span style="color:var(--muted);font-size:0.9rem;">(${p.id})</span></h2>
+          <div class="row" style="margin-top:8px;">
+            <span class="badge cat">${p.category}</span>
+            <span class="badge ${freshClass}">${p.freshness}</span>
+            ${p.recalled ? `<span class="badge recalled">RECALLED</span>` : `<span class="badge stage">${p.stage.replace(/_/g," ")}</span>`}
+          </div>
+        </div>
+        <button class="btn secondary" onclick="generateQR('${p.id}')">🔳 Show QR</button>
+      </div>
+
+      <div class="pill-row">
+        <div class="pill">Origin: <strong>${p.origin}</strong></div>
+        <div class="pill">Quality Score: <strong>${p.quality}%</strong></div>
+        <div class="pill">Chain Events: <strong>${history.length}</strong></div>
+      </div>
+
+      <div style="margin-top:6px;">
+        <div style="display:flex;justify-content:space-between;font-size:0.8rem;color:var(--muted);margin-bottom:4px;">
+          <span>Quality Score</span><span>${p.quality}%</span>
+        </div>
+        <div class="quality-bar"><div style="width:${p.quality}%;background:${qColor}"></div></div>
+      </div>
+
+      ${p.recalled ? `<div class="pill" style="border-color:var(--danger);color:#fecaca;margin-top:12px;">🚨 Recall reason: ${p.recallReason}</div>` : ""}
+
+      <h3>Supply Chain History</h3>
+      <ul class="timeline">
+        ${history.map(h=>`
+          <li>
+            <strong>${(h.data.action||"INIT").replace(/_/g," ")}</strong> — ${h.data.actor||"SYSTEM"}${h.data.location?` @ ${h.data.location}`:""}${h.data.reason?` (Reason: ${h.data.reason})`:""}
+            <div class="meta">${new Date(h.time).toLocaleString()} · Block #${h.index} · hash ${h.hash.slice(0,12)}…</div>
+          </li>
+        `).join("") || `<li>No tracking events recorded.</li>`}
+      </ul>
+    </div>
+  `;
+}
+
+/* ===================== BLOCKCHAIN ===================== */
+function renderBlockchain(){
+  const container = document.getElementById("blockchainData");
+  const blocks = [...state.chain].reverse();
+  container.innerHTML = blocks.map(b=>{
+    const d = b.data;
+    const desc = d.type==="GENESIS"
+      ? (d.note || "Genesis block")
+      : `Product <strong>${d.productId}</strong> — ${(d.action||"").replace(/_/g," ")} by ${d.actor||"SYSTEM"}${d.location?` @ ${d.location}`:""}${d.reason?` — Reason: ${d.reason}`:""}`;
+    return `
+      <div class="block">
+        <div class="hdr"><span>Block #${b.index}</span><span>${new Date(b.time).toLocaleString()}</span></div>
+        <div>${desc}</div>
+        <div class="prev">prevHash: ${b.prevHash.slice(0,32)}…</div>
+        <div class="hash">hash: ${b.hash.slice(0,32)}…</div>
+      </div>
+    `;
+  }).join("");
+  document.getElementById("chainStatus").textContent = "";
+}
+
+function verifyChain(){
+  let ok = true;
+  for(let i=0;i<state.chain.length;i++){
+    const b = state.chain[i];
+    const expectedPrev = i===0 ? "0".repeat(64) : state.chain[i-1].hash;
+    const recomputed = simpleHash(JSON.stringify({index:b.index, prevHash:b.prevHash, time:b.time, data:b.data}));
+    if(b.prevHash !== expectedPrev || b.hash !== recomputed){
+      ok = false; break;
+    }
+  }
+  const el = document.getElementById("chainStatus");
+  el.textContent = ok ? "✅ Chain valid — all hashes consistent" : "❌ Chain integrity issue detected!";
+  el.style.color = ok ? "var(--accent2)" : "var(--danger)";
+  toast(ok ? "Blockchain verified ✅" : "Blockchain integrity error ❌");
+}
+
+/* ===================== RECALLS ===================== */
+function renderRecalls(){
+  const recalled = state.products.filter(p=>p.recalled);
+  const container = document.getElementById("recallsData");
+  if(!recalled.length){
+    container.innerHTML = `<div class="empty">✅ No products have been recalled.</div>`;
+    return;
+  }
+  container.innerHTML = `<div class="grid">` + recalled.map(p=>`
+    <div class="product-card">
+      <div class="row" style="justify-content:space-between;">
+        <h3>${p.name}</h3>
+        <span class="badge recalled">RECALLED</span>
+      </div>
+      <div style="color:var(--muted);font-size:0.85rem;">ID: ${p.id} · Origin: ${p.origin}</div>
+      <div class="pill">Reason: ${p.recallReason}</div>
+      <button class="btn secondary" onclick="viewPassport('${p.id}')">🪪 View Passport</button>
+    </div>
+  `).join("") + `</div>`;
+}
+
+/* ===================== QR MODAL ===================== */
+function generateQR(id){
+  const p = state.products.find(p=>p.id===id);
+  document.getElementById("qrTitle").textContent = p ? `${p.name} — ${p.id}` : id;
+  const box = document.getElementById("qrcode");
+  box.innerHTML = "";
+  new QRCode(box, {text:id, width:160, height:160});
+  document.getElementById("qrModal").classList.remove("hidden");
+}
+function closeQR(){
+  document.getElementById("qrModal").classList.add("hidden");
+}
+
+/* ===================== INIT ===================== */
+function renderAll(){
+  populateFilters();
+  renderDashboard();
+  renderProducts();
+  populatePassportList();
+}
+
+(function init(){
+  if(!load()){
+    state.products = defaultProducts();
+    seedChain(state.products);
+    save();
+  }
+  renderAll();
+})();
+</script>
+
+</body>
+</html>
